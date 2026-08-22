@@ -44,18 +44,15 @@ class NotesProvider extends ChangeNotifier {
     );
   }
 
-  Future<Note?> deleteNote(int id) async {
-    final index = _notes.indexWhere((note) => note.id == id);
-    if (index == -1) return null;
-    final removed = _notes[index];
+  Future<bool> deleteNote(int id) async {
     try {
       await _db.deleteNote(id);
       await loadNotes();
-      return removed;
+      return true;
     } catch (e) {
       _errorMessage = 'Could not delete the note. Please try again.';
       notifyListeners();
-      return null;
+      return false;
     }
   }
 

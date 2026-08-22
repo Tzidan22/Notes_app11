@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,8 +9,6 @@ import 'note_editor_screen.dart';
 import 'settings_screen.dart';
 
 class NotesScreen extends StatelessWidget {
-  static const _undoDuration = Duration(seconds: 5);
-
   const NotesScreen({super.key});
 
   Future<void> _openEditor(BuildContext context, {Note? note}) async {
@@ -48,26 +44,10 @@ class NotesScreen extends StatelessWidget {
     );
 
     if (confirmed != true || note.id == null) return;
-    final deleted = await notesProvider.deleteNote(note.id!);
+    await notesProvider.deleteNote(note.id!);
     if (!context.mounted) return;
 
-    if (deleted != null) {
-      final snackBar = ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Note deleted'),
-          duration: _undoDuration,
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => notesProvider.addNote(deleted),
-          ),
-        ),
-      );
-      var closed = false;
-      snackBar.closed.then((_) => closed = true);
-      unawaited(Future<void>.delayed(_undoDuration, () {
-        if (!closed) snackBar.close();
-      }));
-    } else if (notesProvider.errorMessage != null) {
+    if (notesProvider.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(notesProvider.errorMessage!)),
       );
