@@ -27,8 +27,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     super.initState();
     _titleController = TextEditingController(text: widget.note?.title ?? '');
     _contentController = TextEditingController(text: widget.note?.content ?? '');
-    _initialTitle = _titleController.text;
-    _initialContent = _contentController.text;
+    _initialTitle = widget.note?.title ?? '';
+    _initialContent = widget.note?.content ?? '';
   }
 
   @override
@@ -101,7 +101,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop && await _confirmDiscardIfNeeded() && context.mounted) {
+        if (!didPop && await _confirmDiscardIfNeeded() && mounted) {
           Navigator.of(context).pop();
         }
       },

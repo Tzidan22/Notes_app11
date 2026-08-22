@@ -23,16 +23,16 @@ class EmptyNotes extends StatelessWidget {
             Text(
               'No notes yet',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Create your first note to get started.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                  ),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              ),
             ),
             if (onCreateNote != null) ...[
               const SizedBox(height: 24),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +11,8 @@ import 'note_editor_screen.dart';
 import 'settings_screen.dart';
 
 class NotesScreen extends StatelessWidget {
+  static const _undoDuration = Duration(seconds: 5);
+
   const NotesScreen({super.key});
 
   Future<void> _openEditor(BuildContext context, {Note? note}) async {
@@ -48,16 +52,21 @@ class NotesScreen extends StatelessWidget {
     if (!context.mounted) return;
 
     if (deleted != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      final snackBar = ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Note deleted'),
-          duration: const Duration(seconds: 5),
+          duration: _undoDuration,
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () => notesProvider.addNote(deleted),
           ),
         ),
       );
+      var closed = false;
+      snackBar.closed.then((_) => closed = true);
+      unawaited(Future<void>.delayed(_undoDuration, () {
+        if (!closed) snackBar.close();
+      }));
     } else if (notesProvider.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(notesProvider.errorMessage!)),
@@ -82,7 +91,8 @@ class NotesScreen extends StatelessWidget {
         ],
       ),
       body: Consumer<NotesProvider>(
-        builder: (context, notesProvider, _) => _buildBody(context, notesProvider),
+        builder: (context, notesProvider, _) =>
+            _buildBody(context, notesProvider),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEditor(context),
@@ -93,7 +103,9 @@ class NotesScreen extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context, NotesProvider notesProvider) {
-    if (notesProvider.status == NotesStatus.loading && notesProvider.notes.isEmpty) {
+    final notes = notesProvider.notes;
+
+    if (notesProvider.status == NotesStatus.loading && notes.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
     if (notesProvider.status == NotesStatus.error) {
@@ -101,25 +113,27 @@ class NotesScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, size: 56, color: Theme.of(context).colorScheme.error),
+            Icon(Icons.error_outline_rounded,
+                size: 56, color: Theme.of(context).colorScheme.error),
             const SizedBox(height: 12),
             Text(notesProvider.errorMessage ?? 'Something went wrong.'),
             const SizedBox(height: 16),
-            FilledButton(onPressed: notesProvider.loadNotes, child: const Text('Retry')),
+            FilledButton(
+                onPressed: notesProvider.loadNotes, child: const Text('Retry')),
           ],
         ),
       );
     }
-    if (notesProvider.notes.isEmpty) {
+    if (notes.isEmpty) {
       return EmptyNotes(onCreateNote: () => _openEditor(context));
     }
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-      itemCount: notesProvider.notes.length,
+      itemCount: notes.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        final note = notesProvider.notes[index];
+        final note = notes[index];
         return NoteCard(
           note: note,
           onTap: () => _openEditor(context, note: note),

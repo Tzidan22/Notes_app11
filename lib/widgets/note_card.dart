@@ -36,6 +36,7 @@ class NoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final preview = _preview(note.content);
     final hasTitle = note.title.trim().isNotEmpty;
 
@@ -53,12 +54,12 @@ class NoteCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       hasTitle ? note.title : 'Untitled',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: hasTitle
-                                ? colorScheme.onSurface
-                                : colorScheme.onSurfaceVariant,
-                          ),
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: hasTitle
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurfaceVariant,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -75,9 +76,7 @@ class NoteCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   preview,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
+                  style: textTheme.bodyMedium
                       ?.copyWith(color: colorScheme.onSurfaceVariant),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -86,9 +85,9 @@ class NoteCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Updated ${_relativeTime(note.updatedAt)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                    ),
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                ),
               ),
             ],
           ),
