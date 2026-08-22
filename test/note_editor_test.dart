@@ -14,11 +14,11 @@ void main() {
     expect(find.text('Save'), findsOneWidget);
   });
 
-  testWidgets('opens an existing Markdown note', (WidgetTester tester) async {
+  testWidgets('opens an existing plain text note', (WidgetTester tester) async {
     final note = Note(
       id: 1,
-      title: 'Markdown note',
-      content: '# Heading\n\n**Important**\n\n- Task',
+      title: 'Plain text note',
+      content: 'Important\nTask',
       createdAt: DateTime(2026),
       updatedAt: DateTime(2026),
     );
@@ -28,10 +28,10 @@ void main() {
     );
 
     expect(find.text('Edit Note'), findsOneWidget);
-    expect(find.text('Markdown note'), findsOneWidget);
+    expect(find.text('Plain text note'), findsOneWidget);
   });
 
-  testWidgets('formats Markdown shortcuts without range errors',
+  testWidgets('keeps Markdown characters as plain text',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: NoteEditorScreen()),
@@ -39,12 +39,27 @@ void main() {
 
     final editor = find.byType(EditableText).last;
     await tester.tap(editor);
-    await tester.enterText(editor, '# ');
-    await tester.enterText(editor, 'Title');
-    await tester.enterText(editor, '\n- ');
-    await tester.enterText(editor, 'Task');
+    await tester.enterText(editor, '# Title\n- Task');
     await tester.pump();
 
     expect(find.text('New Note'), findsOneWidget);
+    expect((editor.evaluate().single.widget as EditableText).controller.text,
+        '# Title\n- Task');
+  });
+
+  testWidgets('keeps inline Markdown characters as plain text',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: NoteEditorScreen()),
+    );
+
+    final editor = find.byType(EditableText).last;
+    await tester.tap(editor);
+    await tester.enterText(editor, 'First line\n**bold**');
+    await tester.pump();
+
+    expect(find.text('New Note'), findsOneWidget);
+    expect((editor.evaluate().single.widget as EditableText).controller.text,
+        'First line\n**bold**');
   });
 }

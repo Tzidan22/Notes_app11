@@ -1,109 +1,66 @@
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/note.dart';
 
-/// Singleton wrapper around the app's SQLite database.
+/// Singleton wrapper around the app's Hive database.
 ///
 /// Why a singleton? Opening a database connection is relatively expensive
-/// and sqflite already caches connections internally, but wrapping it in a
-/// singleton class keeps ALL SQL in one place, guarantees we never
-/// accidentally open the database twice with different configuration, and
-/// gives every part of the app (just the NotesProvider, in this project) a
-/// single, simple API: `DatabaseHelper.instance`.
+/// and wrapping it in a singleton class keeps all storage details in one
+/// place. Every part of the app uses the same box through this helper.
 class DatabaseHelper {
-  static const String _databaseName = 'notes.db';
-  static const int _databaseVersion = 2;
-  static const String tableNotes = 'notes';
+  static const String _boxName = 'notes';
 
-  // Private constructor — nobody outside this file can create a new
-  // DatabaseHelper. The only way to get one is via `DatabaseHelper.instance`.
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
-  // The actual sqflite Database object. It's lazily opened the first time
-  // it's needed and then reused for the lifetime of the app.
-  static Database? _database;
-
-  /// Returns the open database, opening it first if this is the first call.
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
-  }
-
-  Future<Database> _initDatabase() async {
-    final String path = join(await getDatabasesPath(), _databaseName);
-    return openDatabase(
-      path,
-      version: _databaseVersion,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
-    );
-  }
-
-  Future<void> _onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE $tableNotes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        content TEXT NOT NULL,
-        createdAt TEXT NOT NULL,
-        updatedAt TEXT NOT NULL,
-        color INTEGER
-      )
-    ''');
-  }
-
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute('ALTER TABLE $tableNotes ADD COLUMN color INTEGER');
+  /// Initializes Hive and opens the notes box.
+  Future<void> initialize() async {
+    if (!Hive.isBoxOpen(_boxName)) {
+      await Hive.initFlutter();
+      await Hive.openBox<Map>(_boxName);
     }
+  }
+
+  Future<Box<Map>> get _box async {
+    await initialize();
+    return Hive.box<Map>(_boxName);
   }
 
   // ---------------------------------------------------------------------
   // CRUD operations
   // ---------------------------------------------------------------------
 
-  /// Inserts a new note and returns the id SQLite assigned to it.
+  /// Inserts a new note and returns the Hive key assigned to it.
   Future<int> insertNote(Note note) async {
-    final db = await database;
-    return db.insert(
-      tableNotes,
-      note.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    final box = await _box;
+    final id = await box.add(note.toMap());
+    await box.put(id, note.copyWith(id: id).toMap());
+    return id;
   }
 
   /// Returns all notes, most-recently-updated first.
   Future<List<Note>> getNotes() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      tableNotes,
-      orderBy: 'updatedAt DESC',
-    );
-    return maps.map((map) => Note.fromMap(map)).toList();
+    final box = await _box;
+    final notes = box.values
+        .map((value) => Note.fromMap(Map<String, dynamic>.from(value)))
+        .toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return notes;
   }
 
-  /// Updates an existing note (matched by id). Returns the number of rows
-  /// affected (1 on success, 0 if the id didn't exist).
+  /// Updates an existing note matched by its Hive key.
   Future<int> updateNote(Note note) async {
-    final db = await database;
-    return db.update(
-      tableNotes,
-      note.toMap(),
-      where: 'id = ?',
-      whereArgs: [note.id],
-    );
+    final box = await _box;
+    if (!box.containsKey(note.id)) return 0;
+    await box.put(note.id, note.toMap());
+    return 1;
   }
 
-  /// Deletes a note by id. Returns the number of rows affected.
+  /// Deletes a note by id. Returns 1 when a note was deleted.
   Future<int> deleteNote(int id) async {
-    final db = await database;
-    return db.delete(
-      tableNotes,
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    final box = await _box;
+    if (!box.containsKey(id)) return 0;
+    await box.delete(id);
+    return 1;
   }
 }

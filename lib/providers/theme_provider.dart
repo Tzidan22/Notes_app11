@@ -3,62 +3,45 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_theme.dart';
 
-/// Holds the user's chosen ThemeMode (system/light/dark) and accent color,
-/// and persists both choices to disk with SharedPreferences so they survive
-/// an app restart.
-///
-/// Like [NotesProvider], this is a ChangeNotifier: when the user picks a
-/// new theme on the Settings screen, `notifyListeners()` fires and
-/// `MaterialApp` (which watches this provider in `main.dart`) rebuilds with
-/// the new `ThemeData`, instantly restyling every screen currently on
-/// screen — no navigation or restart required.
 class ThemeProvider extends ChangeNotifier {
-  static const String _themeModeKey = 'themeMode';
-  static const String _accentColorKey = 'accentColor';
+  static const _themeModeKey = 'theme_mode';
+  static const _accentKey = 'accent_color';
 
   ThemeMode _themeMode = ThemeMode.system;
-  AppAccentColor _accentColor = AppAccentColor.blue;
+  AppAccent _accent = AppAccent.blue;
 
   ThemeMode get themeMode => _themeMode;
-  AppAccentColor get accentColor => _accentColor;
+  AppAccent get accent => _accent;
+  ThemeData get lightTheme => AppTheme.build(_accent, Brightness.light);
+  ThemeData get darkTheme => AppTheme.build(_accent, Brightness.dark);
 
-  ThemeData get lightTheme => AppTheme.light(_accentColor);
-  ThemeData get darkTheme => AppTheme.dark(_accentColor);
-
-  /// Loads any previously saved preferences. Called once at app startup.
   Future<void> loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
+    final preferences = await SharedPreferences.getInstance();
+    final mode = preferences.getString(_themeModeKey);
+    final accentIndex = preferences.getInt(_accentKey);
 
-    final savedMode = prefs.getString(_themeModeKey);
-    if (savedMode != null) {
-      _themeMode = ThemeMode.values.firstWhere(
-        (mode) => mode.name == savedMode,
-        orElse: () => ThemeMode.system,
-      );
+    _themeMode = switch (mode) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+    if (accentIndex != null && accentIndex >= 0 && accentIndex < AppAccent.values.length) {
+      _accent = AppAccent.values[accentIndex];
     }
-
-    final savedAccent = prefs.getString(_accentColorKey);
-    if (savedAccent != null) {
-      _accentColor = AppAccentColor.values.firstWhere(
-        (accent) => accent.name == savedAccent,
-        orElse: () => AppAccentColor.blue,
-      );
-    }
-
     notifyListeners();
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_themeModeKey, mode.name);
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_themeModeKey, mode.name);
   }
 
-  Future<void> setAccentColor(AppAccentColor accent) async {
-    _accentColor = accent;
+  Future<void> setAccent(AppAccent accent) async {
+    _accent = accent;
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_accentColorKey, accent.name);
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setInt(_accentKey, accent.index);
   }
 }

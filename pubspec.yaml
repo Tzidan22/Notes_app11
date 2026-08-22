@@ -1,5 +1,5 @@
 name: flutter_notes_app
-description: "A simple, modern offline notes app built with Flutter and SQLite."
+description: "A simple, modern offline notes app built with Flutter and Hive."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -12,20 +12,13 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
-  # Local persistent storage for notes.
-  sqflite: ^2.4.1
-  sqflite_common_ffi: ^2.3.5
-  path: ^1.9.0
-
+  # Local Hive storage for notes.
   # State management.
   provider: ^6.1.2
-
-  # Persists the user's theme mode / accent color choice across restarts.
   shared_preferences: ^2.3.3
-  flutter_quill: 11.5.1
-  markdown_quill: 4.3.0
-  markdown: 7.3.0
-  url_launcher: 6.3.2
+
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:

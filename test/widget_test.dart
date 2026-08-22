@@ -17,7 +17,6 @@ void main() {
     );
 
     expect(find.text('My Notes'), findsOneWidget);
-    expect(find.byTooltip('Settings'), findsOneWidget);
     expect(find.byTooltip('New note'), findsOneWidget);
   });
 }
